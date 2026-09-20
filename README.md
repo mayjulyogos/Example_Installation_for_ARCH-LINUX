@@ -6,7 +6,7 @@
 * [Arch Linux Installation](Installation.md)
 
 ## Features
-* UEFI Booting via GRUB.
+* UEFI and BIOS Booting via GRUB.
 * Btrfs Subvolume Layout (@, @home, @cache, @log, @snapshots).
 * GNOME Desktop Environment.
 * Audio & Bluetooth Setup using PipeWire and WirePlumber.
@@ -17,7 +17,7 @@
 
 ## Prerequisites
 * Target Disk: /dev/nvme0n1 (adjust drive naming accordingly for /dev/sda or /dev/sda1).
-* Firmware Mode: UEFI.
+* Firmware Mode: UEFI or BIOS.
 * Active Internet Connection: Wi-Fi (via iwctl) or Ethernet.
 
 <br>
