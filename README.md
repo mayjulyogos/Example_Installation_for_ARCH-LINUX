@@ -3,6 +3,7 @@
 <br>
 
 ## Arch Linux + Btrfs + GNOME Installation & Rollback Guide
+* [Arch Linux Installation](Installation.md)
 
 ## Features
 * UEFI Booting via GRUB.
