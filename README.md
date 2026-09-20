@@ -5,6 +5,8 @@
 ## Arch Linux + Btrfs + GNOME Installation & Rollback Guide
 * [Arch Linux Installation](Installation.md)
 
+<br>
+
 ## Features
 * UEFI and BIOS Booting via GRUB.
 * Btrfs Subvolume Layout (@, @home, @cache, @log, @snapshots).
