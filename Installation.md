@@ -172,23 +172,21 @@ genfstab -U /mnt >> /mnt/etc/fstab
 ```bash
 arch-chroot /mnt
 
-#loclisation and hostname
+# Hostname
 echo my-arch-laptop > /etc/hostname
 
-# Uncomment your preferred locale (e.g., en_US.UTF-8 UTF-8)
-nano /etc/locale.gen
+# --- FIXED LOCALE SETUP (Automated sed to eliminate typos) ---
+sed -i 's/#en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen
 locale-gen
-echo LANG=en_US.UTF-8 > /etc/locale.conf
+echo "LANG=en_US.UTF-8" > /etc/locale.conf
+export LANG=en_US.UTF-8
+export LC_ALL=C.UTF-8
 
-# Boot loader installation
-# For Intel CPUs:
-pacman -S --noconfirm intel-ucode
-# For AMD CPUs:
-# pacman -S --noconfirm amd-ucode
+# CPU Microcode
+pacman -S --noconfirm intel-ucode # Or amd-ucode for AMD CPUs
 
+# Install GRUB
 pacman -S --noconfirm grub efibootmgr os-prober
-
-# Note the updated --efi-directory path
 grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=GRUB
 grub-mkconfig -o /boot/grub/grub.cfg
 ```
@@ -199,27 +197,22 @@ grub-mkconfig -o /boot/grub/grub.cfg
 ```bash
 arch-chroot /mnt
 
-#loclisation and hostname
+# Hostname
 echo my-arch-laptop > /etc/hostname
 
-# Uncomment your preferred locale (e.g., en_US.UTF-8 UTF-8)
-nano /etc/locale.gen
+# --- FIXED LOCALE SETUP (Automated sed to eliminate typos) ---
+sed -i 's/#en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen
 locale-gen
-echo LANG=en_US.UTF-8 > /etc/locale.conf
+echo "LANG=en_US.UTF-8" > /etc/locale.conf
+export LANG=en_US.UTF-8
+export LC_ALL=C.UTF-8
 
-# For Intel CPUs:
-pacman -S --noconfirm intel-ucode
+# CPU Microcode
+pacman -S --noconfirm intel-ucode # Or amd-ucode for AMD CPUs
 
-# For AMD CPUs:
-# pacman -S --noconfirm amd-ucode
-
-# Install GRUB and OS Prober
+# Install GRUB to MBR / BIOS drive (Target whole disk, NOT partition)
 pacman -S --noconfirm grub os-prober
-
-# Install GRUB to the Master Boot Record (MBR) / BIOS Boot partition
 grub-install --target=i386-pc /dev/nvme0n1
-
-# Generate the GRUB configuration file
 grub-mkconfig -o /boot/grub/grub.cfg
 ```
 
@@ -638,7 +631,7 @@ sudo chmod 750 /.snapshots
 ### Step 14.5. Tune snapshot retention (optional but recommended)
 ```bash
 sudo nano /etc/snapper/configs/root
-```[cite: 1]
+```
 Set these values:
 ```text
 TIMELINE_CREATE="yes"
@@ -646,8 +639,8 @@ TIMELINE_LIMIT_HOURLY="5"
 TIMELINE_LIMIT_DAILY="7"
 TIMELINE_LIMIT_WEEKLY="4"
 TIMELINE_LIMIT_MONTHLY="3"
-```[cite: 1]
-Press `Ctrl + O`, `Enter`, then `Ctrl + X` to save and exit[cite: 1].
+```
+Press `Ctrl + O`, `Enter`, then `Ctrl + X` to save and exit.
 
 Enable the timers that create and clean up timeline snapshots:
 ```bash
