@@ -264,16 +264,20 @@ reboot
 
 ## Step 10. Install GNOME, GDM and GPU DRIVER
 * You may install the GPU Driver by following the GPU you use so you don't need to install intel GPU if you are using AMD GPU
+* Use `su` to get the root acces, so you may just simply type in su and press enter to get into root
+* In this case we are not going to use sudo because `su` doesn't require any other configuraitons
 ```bash
-sudo pacman -S gnome gdm # install gnome and gdm
+su
 
-sudo pacman -S nvidia-utils nvidia-settings nvidia-open-dkms linux-headers libva-nvidia-driver libva-utils # nvidia drivers
+pacman -S gdm gnome-shell gnome-control-center nautilus gnome-console # install gnome and gdm
 
-sudo pacman -S linux-firmware mesa vulkan-intel intel-media-driver libva-utils intel-gpu-tools # intel drivers
+pacman -S nvidia-utils nvidia-settings nvidia-open-dkms linux-headers libva-nvidia-driver libva-utils # nvidia drivers
 
-sudo pacman -S mesa lib32-mesa xf86-video-amdgpu vulkan-radeon lib32-vulkan-radeon # AMD GPU
+pacman -S linux-firmware mesa vulkan-intel intel-media-driver libva-utils intel-gpu-tools # intel drivers
 
-sudo systemctl enable gdm # enable login screen
+pacman -S mesa lib32-mesa xf86-video-amdgpu vulkan-radeon lib32-vulkan-radeon # AMD GPU
+
+ systemctl enable gdm # enable login screen
 
 systemctl reboot -i # reboot into your new desktop
 ```
@@ -298,8 +302,10 @@ sudo pacman -S cuda
 
 ## Step 12. Configure Audio and Bluetooth
 ```bash
-sudo pacman -Syu
-sudo pacman -S \
+su
+
+pacman -Syu
+pacman -S \
 pipewire \
 wireplumber \
 pipewire-alsa \
@@ -309,9 +315,9 @@ alsa-utils \
 sof-firmware \
 alsa-firmware
 
-sudo pacman -S bluez bluez-utils
+pacman -S bluez bluez-utils
 
-sudo systemctl enable --now bluetooth.service
+systemctl enable --now bluetooth.service
 
 reboot
 ```
@@ -324,34 +330,36 @@ reboot
 
 # Step 13. Firewalld & GNOME Integration
 ```bash
+su
+
 # Install firewalld and the graphical configuration tool
-sudo pacman -S firewalld network-manager-applet
+pacman -S firewalld network-manager-applet
 
 # Enable and start the service
-sudo systemctl enable --now firewalld
+systemctl enable --now firewalld
 
 # Install AppArmor and the default profiles
-sudo pacman -S apparmor
+pacman -S apparmor
 
 # Enable the systemd service
-sudo systemctl enable apparmor.service
+systemctl enable apparmor.service
 
-sudo nano /etc/default/grub
+nano /etc/default/grub
 GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet rhgb rd.driver.blacklist=nouveau,nova_core modprobe.blacklist=nouveau,nova_core nvidia-drm.modeset=1 nvidia-drm.fbdev=1 acpi_backlight=native apparmor=1 lsm=landlock,lockdown,yama,apparmor,bpf"
 # Ctrl + O, Enter, then Ctrl + X
 
-sudo grub-mkconfig -o /boot/grub/grub.cfg
+grub-mkconfig -o /boot/grub/grub.cfg
 
-sudo pacman -S firewall-config
+pacman -S firewall-config
 
 # Automatically inject nvidia modules into mkinitcpio.conf for early loading (KMS)
-sudo sed -i 's/^MODULES=(/MODULES=(nvidia nvidia_modeset nvidia_uvm nvidia_drm /' /etc/mkinitcpio.conf
+sed -i 's/^MODULES=(/MODULES=(nvidia nvidia_modeset nvidia_uvm nvidia_drm /' /etc/mkinitcpio.conf
 
 # Regenerate the initramfs
-sudo mkinitcpio -P
+mkinitcpio -P
 
 # Regenerate grub one more time to apply the command line arguments
-sudo grub-mkconfig -o /boot/grub/grub.cfg
+grub-mkconfig -o /boot/grub/grub.cfg
 ```
 
 <br>
@@ -368,7 +376,9 @@ This gives you Fedora Atomic / NixOS-style rollbacks on top of your existing btr
 
 ### Step 14.1. Install the packages
 ```bash
-sudo pacman -S --noconfirm snapper grub-btrfs inotify-tools snap-pac
+su
+
+pacman -S --noconfirm snapper grub-btrfs inotify-tools snap-pac
 ```
 - `snapper` — creates and manages the snapshots
 - `grub-btrfs` — adds a "snapshots" submenu to GRUB so you can boot into any snapshot
@@ -381,26 +391,26 @@ sudo pacman -S --noconfirm snapper grub-btrfs inotify-tools snap-pac
 Your original partitioning (Step 5) didn't create a subvolume for snapshots, so add one now. This must be a sibling of `@`, not nested inside it, or recursive snapshotting will break.
 ```bash
 # Temporarily mount the top-level (unnamed) subvolume of the btrfs filesystem
-sudo mkdir -p /mnt/btrfs-root
-sudo mount -o subvol=/ /dev/nvme0n1p3 /mnt/btrfs-root
+mkdir -p /mnt/btrfs-root
+mount -o subvol=/ /dev/nvme0n1p3 /mnt/btrfs-root
 
 # Create the new subvolume as a sibling of @, @home, @cache, @log
-sudo btrfs subvolume create /mnt/btrfs-root/@snapshots
+btrfs subvolume create /mnt/btrfs-root/@snapshots
 
 # Unmount, we're done with the top-level view
-sudo umount /mnt/btrfs-root
+umount /mnt/btrfs-root
 ```
 
 <br>
 
 ### Step 14.3. Mount `@snapshots` at `/.snapshots`
 ```bash
-sudo mkdir -p /.snapshots
+mkdir -p /.snapshots
 
 # Add it to fstab so it persists across reboots
 echo "/dev/nvme0n1p3 /.snapshots btrfs noatime,compress=zstd,subvol=@snapshots 0 0" | sudo tee -a /etc/fstab
 
-sudo mount -a
+mount -a
 ```
 
 <br>
@@ -409,29 +419,29 @@ sudo mount -a
 `snapper create-config` wants to create its own `.snapshots` subvolume, so we let it create one, then swap in the one we already mounted.
 ```bash
 # 1. Remove the empty directory (if it exists) to ensure a clean mount point
-sudo rm -rf /.snapshots
+rm -rf /.snapshots
 
 # 2. Generate the root config (Snapper will automatically create a default /.snapshots subvolume)
-sudo snapper -c root create-config /
+snapper -c root create-config /
 
 # 3. Delete the automatically generated subvolume so we can replace it with our @snapshots subvolume
-sudo btrfs subvolume delete /.snapshots
+btrfs subvolume delete /.snapshots
 
 # 4. Recreate the mount point directory
-sudo mkdir -p /.snapshots
+mkdir -p /.snapshots
 
 # 5. Mount all filesystems listed in /etc/fstab (mounts @snapshots to /.snapshots)
-sudo mount -a
+mount -a
 
 # 6. Apply strict permission settings
-sudo chmod 750 /.snapshots
+chmod 750 /.snapshots
 ```
 
 <br>
 
 ### Step 14.5. Tune snapshot retention (optional but recommended)
 ```bash
-sudo nano /etc/snapper/configs/root
+nano /etc/snapper/configs/root
 ```
 Set these values:
 ```
@@ -445,8 +455,8 @@ Ctrl + O, Enter, then Ctrl + X to save and exit.
 
 Enable the timers that create and clean up timeline snapshots:
 ```bash
-sudo systemctl enable --now snapper-timeline.timer
-sudo systemctl enable --now snapper-cleanup.timer
+systemctl enable --now snapper-timeline.timer
+systemctl enable --now snapper-cleanup.timer
 ```
 
 <br>
@@ -454,10 +464,10 @@ sudo systemctl enable --now snapper-cleanup.timer
 ### Step 14.6. Wire snapshots into GRUB
 ```bash
 # Auto-regenerates grub.cfg whenever a new snapshot is created
-sudo systemctl enable --now grub-btrfsd
+systemctl enable --now grub-btrfsd
 
 # Build the initial snapshot submenu (your EFI is at /boot)
-sudo grub-mkconfig -o /boot/grub/grub.cfg
+grub-mkconfig -o /boot/grub/grub.cfg
 ```
 From this point on, `grub-btrfsd` watches `/.snapshots` and regenerates `/boot/grub/grub.cfg` automatically every time `snap-pac` creates a snapshot. You don't need to re-run `grub-mkconfig` manually going forward.
 
@@ -466,7 +476,7 @@ From this point on, `grub-btrfsd` watches `/.snapshots` and regenerates `/boot/g
 ### Step 14.7. (Optional) Track `/home` separately
 Because `@home` is its own subvolume, the root config above does **not** cover it — a system rollback won't touch your personal files, which is usually what you want. If you'd also like undo history for `/home`:
 ```bash
-sudo snapper -c home create-config /home
+snapper -c home create-config /home
 ```
 It shares the same `snapper-timeline.timer` and `snapper-cleanup.timer` already enabled above.
 
@@ -475,7 +485,7 @@ It shares the same `snapper-timeline.timer` and `snapper-cleanup.timer` already 
 ### Step 14.8. Make the snapshot submenu easy to find and keep it short
 grub-btrfs always nests snapshots inside a submenu — there's no supported config option to fully flatten them onto the main GRUB page (this isn't exposed by the tool, despite some guides online claiming otherwise). What you *can* do is name the submenu clearly and keep it short so it's fast to use:
 ```bash
-sudo nano /etc/default/grub-btrfs/config
+nano /etc/default/grub-btrfs/config
 ```
 Give the submenu a distinct name so it stands out on the boot screen:
 ```
@@ -487,7 +497,7 @@ GRUB_BTRFS_LIMIT="10"
 ```
 Save (Ctrl + O, Enter) and exit (Ctrl + X), then regenerate GRUB once to apply it:
 ```bash
-sudo grub-mkconfig -o /boot/grub/grub.cfg
+grub-mkconfig -o /boot/grub/grub.cfg
 ```
 From now on `grub-btrfsd` keeps this configuration applied automatically as new snapshots are created — no need to repeat this step. In practice, this means one extra Enter press at boot to open the submenu, then pick your snapshot — there's no safe way around that extra step without hand-patching a file that pacman will overwrite on the next `grub-btrfs` update.
 
@@ -497,12 +507,14 @@ From now on `grub-btrfsd` keeps this configuration applied automatically as new 
 
 **List snapshots:**
 ```bash
-sudo snapper -c root list
+su
+
+snapper -c root list
 ```
 
 **Take a manual snapshot before something risky** (e.g. before Step 10's Nvidia driver install, or before a `yay -Syu`):
 ```bash
-sudo snapper -c root create --description "new regular snapshot"
+snapper -c root create --description "new regular snapshot"
 ```
 
 Boot into a snapshot to inspect it (non-destructive, read-only):
@@ -510,14 +522,16 @@ Reboot → in the GRUB menu select `Arch Linux snapshots` → pick the timestamp
 
 **Actually roll back to a snapshot** (your current state is preserved as a new snapshot first, so this is non-destructive):
 ```bash
-sudo snapper -c root list          # find the snapshot number, e.g. 42
-sudo snapper -c root rollback 42
-sudo reboot
+su
+
+snapper -c root list          # find the snapshot number, e.g. 42
+snapper -c root rollback 42
+systemctl reboot
 ```
 
 **Diff what changed between two snapshots:**
 ```bash
-sudo snapper -c root status 40..42
+snapper -c root status 40..42
 ```
 
 SAFE:
@@ -566,7 +580,9 @@ reboot
 
 ### Step 14.1. Install the packages
 ```bash
-sudo pacman -S --noconfirm snapper grub-btrfs inotify-tools snap-pac
+su
+
+pacman -S --noconfirm snapper grub-btrfs inotify-tools snap-pac
 ```
 
 - `snapper` — creates and manages the snapshots[cite: 1]
@@ -580,26 +596,26 @@ sudo pacman -S --noconfirm snapper grub-btrfs inotify-tools snap-pac
 Your original partitioning didn't create a subvolume for snapshots, so add one now[cite: 1]. This must be a sibling of `@`, not nested inside it, or recursive snapshotting will break[cite: 1].
 ```bash
 # Temporarily mount the top-level (unnamed) subvolume of the btrfs filesystem
-sudo mkdir -p /mnt/btrfs-root
-sudo mount -o subvol=/ /dev/nvme0n1p3 /mnt/btrfs-root
+mkdir -p /mnt/btrfs-root
+mount -o subvol=/ /dev/nvme0n1p3 /mnt/btrfs-root
 
 # Create the new subvolume as a sibling of @, @home, @cache, @log
-sudo btrfs subvolume create /mnt/btrfs-root/@snapshots
+btrfs subvolume create /mnt/btrfs-root/@snapshots
 
 # Unmount, we're done with the top-level view
-sudo umount /mnt/btrfs-root
+umount /mnt/btrfs-root
 ```
 
 <br>
 
 ### Step 14.3. Mount `@snapshots` at `/.snapshots`
 ```bash
-sudo mkdir -p /.snapshots
+mkdir -p /.snapshots
 
 # Add it to fstab so it persists across reboots
 echo "/dev/nvme0n1p3 /.snapshots btrfs noatime,compress=zstd,subvol=@snapshots 0 0" | sudo tee -a /etc/fstab
 
-sudo mount -a
+mount -a
 ```
 
 <br>
@@ -608,29 +624,29 @@ sudo mount -a
 `snapper create-config` wants to create its own `.snapshots` subvolume, so we let it create one, then swap in the one we already mounted[cite: 1].
 ```bash
 # 1. Remove the empty directory (if it exists) to ensure a clean mount point
-sudo rm -rf /.snapshots
+rm -rf /.snapshots
 
 # 2. Generate the root config (Snapper will automatically create a default /.snapshots subvolume)
-sudo snapper -c root create-config /
+snapper -c root create-config /
 
 # 3. Delete the automatically generated subvolume so we can replace it with our @snapshots subvolume
-sudo btrfs subvolume delete /.snapshots
+btrfs subvolume delete /.snapshots
 
 # 4. Recreate the mount point directory
-sudo mkdir -p /.snapshots
+mkdir -p /.snapshots
 
 # 5. Mount all filesystems listed in /etc/fstab (mounts @snapshots to /.snapshots)
-sudo mount -a
+mount -a
 
 # 6. Apply strict permission settings
-sudo chmod 750 /.snapshots
+chmod 750 /.snapshots
 ```
 
 <br>
 
 ### Step 14.5. Tune snapshot retention (optional but recommended)
 ```bash
-sudo nano /etc/snapper/configs/root
+nano /etc/snapper/configs/root
 ```
 Set these values:
 ```text
@@ -644,8 +660,8 @@ Press `Ctrl + O`, `Enter`, then `Ctrl + X` to save and exit.
 
 Enable the timers that create and clean up timeline snapshots:
 ```bash
-sudo systemctl enable --now snapper-timeline.timer
-sudo systemctl enable --now snapper-cleanup.timer
+systemctl enable --now snapper-timeline.timer
+systemctl enable --now snapper-cleanup.timer
 ```
 
 <br>
@@ -653,10 +669,10 @@ sudo systemctl enable --now snapper-cleanup.timer
 ### Step 14.6. Wire snapshots into GRUB
 ```bash
 # Auto-regenerates grub.cfg whenever a new snapshot is created
-sudo systemctl enable --now grub-btrfsd
+systemctl enable --now grub-btrfsd
 
 # Build the initial snapshot submenu
-sudo grub-mkconfig -o /boot/grub/grub.cfg
+grub-mkconfig -o /boot/grub/grub.cfg
 ```
 From this point on, `grub-btrfsd` watches `/.snapshots` and regenerates `/boot/grub/grub.cfg` automatically every time `snap-pac` creates a snapshot[cite: 1]. You don't need to re-run `grub-mkconfig` manually going forward[cite: 1].
 
@@ -665,7 +681,7 @@ From this point on, `grub-btrfsd` watches `/.snapshots` and regenerates `/boot/g
 ### Step 14.7. (Optional) Track `/home` separately
 Because `@home` is its own subvolume, the root config above does **not** cover it — a system rollback won't touch your personal files, which is usually what you want[cite: 1]. If you'd also like undo history for `/home`:
 ```bash
-sudo snapper -c home create-config /home
+snapper -c home create-config /home
 ```
 It shares the same `snapper-timeline.timer` and `snapper-cleanup.timer` already enabled above[cite: 1].
 
@@ -674,7 +690,7 @@ It shares the same `snapper-timeline.timer` and `snapper-cleanup.timer` already 
 ### Step 14.8. Make the snapshot submenu easy to find and keep it short
 grub-btrfs always nests snapshots inside a submenu[cite: 1]. What you *can* do is name the submenu clearly and keep it short so it's fast to use:
 ```bash
-sudo nano /etc/default/grub-btrfs/config
+nano /etc/default/grub-btrfs/config
 ```
 Give the submenu a distinct name so it stands out on the boot screen:
 ```text
@@ -686,7 +702,7 @@ GRUB_BTRFS_LIMIT="10"
 ```
 Save (`Ctrl + O`, `Enter`) and exit (`Ctrl + X`), then regenerate GRUB once to apply it:
 ```bash
-sudo grub-mkconfig -o /boot/grub/grub.cfg
+grub-mkconfig -o /boot/grub/grub.cfg
 ```
 
 <br>
@@ -695,12 +711,14 @@ sudo grub-mkconfig -o /boot/grub/grub.cfg
 
 **List snapshots:**
 ```bash
-sudo snapper -c root list
+su
+
+snapper -c root list
 ```
 
 **Take a manual snapshot before something risky:**
 ```bash
-sudo snapper -c root create --description "new regular snapshot"
+snapper -c root create --description "new regular snapshot"
 ```
 
 **Boot into a snapshot to inspect it (non-destructive, read-only):**
@@ -708,14 +726,16 @@ Reboot → in the GRUB menu select `Rollback to Snapshot` → pick the timestamp
 
 **Actually roll back to a snapshot:**
 ```bash
-sudo snapper -c root list          # find the snapshot number, e.g. 42
-sudo snapper -c root rollback 42
-sudo reboot
+su
+
+snapper -c root list          # find the snapshot number, e.g. 42
+snapper -c root rollback 42
+reboot
 ```
 
 **Diff what changed between two snapshots:**
 ```bash
-sudo snapper -c root status 40..42
+snapper -c root status 40..42
 ```
 
 <br>
