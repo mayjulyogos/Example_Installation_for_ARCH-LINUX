@@ -408,7 +408,7 @@ umount /mnt/btrfs-root
 mkdir -p /.snapshots
 
 # Add it to fstab so it persists across reboots
-echo "/dev/nvme0n1p3 /.snapshots btrfs noatime,compress=zstd,subvol=@snapshots 0 0" | sudo tee -a /etc/fstab
+echo "/dev/nvme0n1p3 /.snapshots btrfs noatime,compress=zstd,subvol=@snapshots 0 0" | tee -a /etc/fstab
 
 mount -a
 ```
@@ -613,7 +613,7 @@ umount /mnt/btrfs-root
 mkdir -p /.snapshots
 
 # Add it to fstab so it persists across reboots
-echo "/dev/nvme0n1p3 /.snapshots btrfs noatime,compress=zstd,subvol=@snapshots 0 0" | sudo tee -a /etc/fstab
+echo "/dev/nvme0n1p3 /.snapshots btrfs noatime,compress=zstd,subvol=@snapshots 0 0" | tee -a /etc/fstab
 
 mount -a
 ```
