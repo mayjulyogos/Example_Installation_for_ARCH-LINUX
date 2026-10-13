@@ -264,7 +264,7 @@ reboot
 
 ## Step 10. Install GNOME, GDM and GPU DRIVER
 * You may install the GPU Driver by following the GPU you use so you don't need to install intel GPU if you are using AMD GPU
-* Use `su` to get the root acces, so you may just simply type in su and press enter to get into root
+* Use `su` to get the root acces, so you may just simply type in `su` and press enter to get into root
 * In this case we are not going to use sudo because `su` doesn't require any other configuraitons
 ```bash
 su
