@@ -370,9 +370,9 @@ grub-mkconfig -o /boot/grub/grub.cfg
 
 ## Step 14. Snapper + grub-btrfs Atomic Rollback System
 
-* For UEFI mode
-
 This gives you Fedora Atomic / NixOS-style rollbacks on top of your existing btrfs layout (`@`, `@home`, `@cache`, `@log`). Every `pacman` transaction from here on automatically creates a bootable restore point — no manual snapshotting needed for normal use.
+
+## For UEFI mode
 
 ### Step 14.1. Install the packages
 ```bash
@@ -576,7 +576,7 @@ reboot
 
 <br>
 
-* For BIOS mode
+## For BIOS mode
 
 ### Step 14.1. Install the packages
 ```bash
