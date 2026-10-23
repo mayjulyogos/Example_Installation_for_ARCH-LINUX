@@ -328,7 +328,7 @@ reboot
 
 <br>
 
-# Step 13. Firewalld & GNOME Integration
+## Step 13. Firewalld & GNOME Integration
 ```bash
 su
 
