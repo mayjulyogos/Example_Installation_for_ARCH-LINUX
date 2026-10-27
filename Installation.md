@@ -249,6 +249,28 @@ nmtui
 
 <br>
 
+## Configure Swappiness (Optional)
+- This is important for reducing the usage of your storage device
+- Linux kernel usually set the swappiness to 60 which will prioritize the usage of storage device other than our RAM
+```bash
+# Check the current swappiness value
+cat /proc/sys/vm/swappiness
+
+# Edit `/etc/sysctl.conf` to change the value permanently
+# Press Ctrl + o and Ctrl + x to save the configured file
+vm.swappiness = 10
+
+# Run this following command line to apply changes
+su # Enter root environment
+sysctl -p
+```
+
+<br>
+
+---
+
+<br>
+
 ## Step 9. Clean up and First boot
 ```bash
 exit
