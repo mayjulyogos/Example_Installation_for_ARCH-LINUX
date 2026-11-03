@@ -2,10 +2,6 @@
 
 <br>
 
-# Arch Linux Installation
-
-<br>
-
 ## Step 1. Set Keyboard Layout (Optional)
 ```bash
 ls /usr/share/kbd/keymaps/**/us*.map.gz
@@ -288,7 +284,34 @@ reboot
 
 <br>
 
-## Step 10. Configure Audio and Bluetooth
+## Step 10. GPU Drivers Installation
+* You may install the GPU Driver by following the GPU you use so you don't need to install intel GPU if you are using AMD GPU
+```bash
+sudo pacman -S nvidia-utils nvidia-settings nvidia-open-dkms linux-headers libva-nvidia-driver libva-utils # nvidia drivers
+
+sudo pacman -S linux-firmware mesa vulkan-intel intel-media-driver libva-utils intel-gpu-tools # intel drivers
+
+sudo pacman -S mesa lib32-mesa xf86-video-amdgpu vulkan-radeon lib32-vulkan-radeon # AMD GPU
+```
+
+<br>
+
+---
+
+<br>
+
+## CUDA
+```bash
+sudo pacman -S cuda
+```
+
+<br>
+
+---
+
+<br>
+
+## Step 11. Configure Audio and Bluetooth
 ```bash
 su
 
@@ -316,7 +339,7 @@ reboot
 
 <br>
 
-## Step 11. Firewalld
+## Step 12. Firewalld
 ```bash
 su
 
@@ -356,13 +379,13 @@ grub-mkconfig -o /boot/grub/grub.cfg
 
 <br>
 
-## Step 12. Snapper + grub-btrfs Atomic Rollback System
+## Step 13. Snapper + grub-btrfs Atomic Rollback System
 
 This gives you Fedora Atomic / NixOS-style rollbacks on top of your existing btrfs layout (`@`, `@home`, `@cache`, `@log`). Every `pacman` transaction from here on automatically creates a bootable restore point — no manual snapshotting needed for normal use.
 
 ## For UEFI mode
 
-### Step 12.1. Install the packages
+### Step 13.1. Install the packages
 ```bash
 su
 
@@ -375,7 +398,7 @@ pacman -S --noconfirm snapper grub-btrfs inotify-tools snap-pac
 
 <br>
 
-### Step 12.2. Create a dedicated `@snapshots` subvolume
+### Step 13.2. Create a dedicated `@snapshots` subvolume
 Your original partitioning (Step 5) didn't create a subvolume for snapshots, so add one now. This must be a sibling of `@`, not nested inside it, or recursive snapshotting will break.
 ```bash
 # Temporarily mount the top-level (unnamed) subvolume of the btrfs filesystem
@@ -391,7 +414,7 @@ umount /mnt/btrfs-root
 
 <br>
 
-### Step 12.3. Mount `@snapshots` at `/.snapshots`
+### Step 13.3. Mount `@snapshots` at `/.snapshots`
 ```bash
 mkdir -p /.snapshots
 
@@ -403,7 +426,7 @@ mount -a
 
 <br>
 
-### Step 12.4. Initialize the snapper config
+### Step 13.4. Initialize the snapper config
 `snapper create-config` wants to create its own `.snapshots` subvolume, so we let it create one, then swap in the one we already mounted.
 ```bash
 # 1. Remove the empty directory (if it exists) to ensure a clean mount point
@@ -427,7 +450,7 @@ chmod 750 /.snapshots
 
 <br>
 
-### Step 12.5. Tune snapshot retention (optional but recommended)
+### Step 13.5. Tune snapshot retention (optional but recommended)
 ```bash
 nano /etc/snapper/configs/root
 ```
@@ -449,7 +472,7 @@ systemctl enable --now snapper-cleanup.timer
 
 <br>
 
-### Step 12.6. Wire snapshots into GRUB
+### Step 13.6. Wire snapshots into GRUB
 ```bash
 # Auto-regenerates grub.cfg whenever a new snapshot is created
 systemctl enable --now grub-btrfsd
@@ -461,7 +484,7 @@ From this point on, `grub-btrfsd` watches `/.snapshots` and regenerates `/boot/g
 
 <br>
 
-### Step 12.7. (Optional) Track `/home` separately
+### Step 13.7. (Optional) Track `/home` separately
 Because `@home` is its own subvolume, the root config above does **not** cover it — a system rollback won't touch your personal files, which is usually what you want. If you'd also like undo history for `/home`:
 ```bash
 snapper -c home create-config /home
@@ -470,7 +493,7 @@ It shares the same `snapper-timeline.timer` and `snapper-cleanup.timer` already 
 
 <br>
 
-### Step 12.8. Make the snapshot submenu easy to find and keep it short
+### Step 13.8. Make the snapshot submenu easy to find and keep it short
 grub-btrfs always nests snapshots inside a submenu — there's no supported config option to fully flatten them onto the main GRUB page (this isn't exposed by the tool, despite some guides online claiming otherwise). What you *can* do is name the submenu clearly and keep it short so it's fast to use:
 ```bash
 nano /etc/default/grub-btrfs/config
@@ -566,7 +589,7 @@ reboot
 
 ## For BIOS mode
 
-### Step 12.1. Install the packages
+### Step 13.1. Install the packages
 ```bash
 su
 
@@ -580,7 +603,7 @@ pacman -S --noconfirm snapper grub-btrfs inotify-tools snap-pac
 
 <br>
 
-### Step 12.2. Create a dedicated `@snapshots` subvolume
+### Step 13.2. Create a dedicated `@snapshots` subvolume
 Your original partitioning didn't create a subvolume for snapshots, so add one now[cite: 1]. This must be a sibling of `@`, not nested inside it, or recursive snapshotting will break[cite: 1].
 ```bash
 # Temporarily mount the top-level (unnamed) subvolume of the btrfs filesystem
@@ -596,7 +619,7 @@ umount /mnt/btrfs-root
 
 <br>
 
-### Step 12.3. Mount `@snapshots` at `/.snapshots`
+### Step 13.3. Mount `@snapshots` at `/.snapshots`
 ```bash
 mkdir -p /.snapshots
 
@@ -608,7 +631,7 @@ mount -a
 
 <br>
 
-### Step 12.4. Initialize the snapper config
+### Step 13.4. Initialize the snapper config
 `snapper create-config` wants to create its own `.snapshots` subvolume, so we let it create one, then swap in the one we already mounted[cite: 1].
 ```bash
 # 1. Remove the empty directory (if it exists) to ensure a clean mount point
@@ -632,7 +655,7 @@ chmod 750 /.snapshots
 
 <br>
 
-### Step 12.5. Tune snapshot retention (optional but recommended)
+### Step 13.5. Tune snapshot retention (optional but recommended)
 ```bash
 nano /etc/snapper/configs/root
 ```
@@ -654,7 +677,7 @@ systemctl enable --now snapper-cleanup.timer
 
 <br>
 
-### Step 12.6. Wire snapshots into GRUB
+### Step 13.6. Wire snapshots into GRUB
 ```bash
 # Auto-regenerates grub.cfg whenever a new snapshot is created
 systemctl enable --now grub-btrfsd
@@ -666,7 +689,7 @@ From this point on, `grub-btrfsd` watches `/.snapshots` and regenerates `/boot/g
 
 <br>
 
-### Step 14.2. (Optional) Track `/home` separately
+### Step 13.7. (Optional) Track `/home` separately
 Because `@home` is its own subvolume, the root config above does **not** cover it — a system rollback won't touch your personal files, which is usually what you want[cite: 1]. If you'd also like undo history for `/home`:
 ```bash
 snapper -c home create-config /home
@@ -675,7 +698,7 @@ It shares the same `snapper-timeline.timer` and `snapper-cleanup.timer` already 
 
 <br>
 
-### Step 12.8. Make the snapshot submenu easy to find and keep it short
+### Step 13.8. Make the snapshot submenu easy to find and keep it short
 grub-btrfs always nests snapshots inside a submenu[cite: 1]. What you *can* do is name the submenu clearly and keep it short so it's fast to use:
 ```bash
 nano /etc/default/grub-btrfs/config
