@@ -10,7 +10,6 @@
 ## Features
 * UEFI and BIOS Booting via GRUB.
 * Btrfs Subvolume Layout (@, @home, @cache, @log, @snapshots).
-* GNOME Desktop Environment.
 * Audio & Bluetooth Setup using PipeWire and WirePlumber.
 * Security Hardening using firewalld and AppArmor.
 * Atomic System Rollbacks integrated with pacman and grub-btrfs.
