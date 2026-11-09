@@ -224,23 +224,18 @@ grub-mkconfig -o /boot/grub/grub.cfg
 
 ## Step 8. User Management
 ```bash
-# Set Root Password
-passwd
+# 1. Install Sudo
+pacman -S --noconfirm sudo
 
-# Create Personal User
+# 2. Create personal user and add to wheel group
 useradd -m -G wheel my_username
+
+# 3. Set user password
 passwd my_username
 
-# Seamlessly enable wheel group permissions without using interactive visudo
-pacman -S --noconfirm sudo
+# 4. Configure sudoers with strict read-only permissions (0440)
 echo "%wheel ALL=(ALL:ALL) ALL" > /etc/sudoers.d/wheel
-
-# Enable Network Management service
-pacman -S networkmanager
-systemctl enable NetworkManager
-
-# How to use NetworkManager
-nmtui
+chmod 0440 /etc/sudoers.d/wheel
 ```
 
 <br>
@@ -418,10 +413,27 @@ umount /mnt/btrfs-root
 ```bash
 mkdir -p /.snapshots
 
-# Add it to fstab so it persists across reboots
-echo "/dev/nvme0n1p3 /.snapshots btrfs noatime,compress=zstd,subvol=@snapshots 0 0" | tee -a /etc/fstab
+# 1. Automatically find the Btrfs root partition (e.g., /dev/nvme0n1p3)
+BTRFS_PART=$(findmnt -n -o SOURCE /)
 
+# 2. Automatically extract the UUID of that Btrfs partition
+BTRFS_UUID=$(blkid -s UUID -o value "$BTRFS_PART")
+
+# 3. Check if the @snapshots entry already exists in fstab to prevent duplicates
+if ! grep -q "subvol=@snapshots" /etc/fstab; then
+    # Safely write the fstab entry using the dynamically fetched UUID
+    echo "UUID=$BTRFS_UUID /.snapshots btrfs rw,noatime,compress=zstd:3,ssd,discard=async,space_cache=v2,subvol=@snapshots 0 0" | sudo tee -a /etc/fstab
+    echo "--- Successfully added @snapshots to /etc/fstab using UUID: $BTRFS_UUID ---"
+else
+    echo "--- @snapshots entry already exists in /etc/fstab, skipping ---"
+fi
+
+# 4. Mount all filesystems listed in fstab (including the newly added @snapshots)
 mount -a
+
+# 5. Verification
+# Check if the output line includes your current UUID and subvol=@snapshots parameters
+tail -n 1 /etc/fstab
 ```
 
 <br>
@@ -623,10 +635,27 @@ umount /mnt/btrfs-root
 ```bash
 mkdir -p /.snapshots
 
-# Add it to fstab so it persists across reboots
-echo "/dev/nvme0n1p3 /.snapshots btrfs noatime,compress=zstd,subvol=@snapshots 0 0" | tee -a /etc/fstab
+# 1. Automatically find the Btrfs root partition (e.g., /dev/nvme0n1p3)
+BTRFS_PART=$(findmnt -n -o SOURCE /)
 
+# 2. Automatically extract the UUID of that Btrfs partition
+BTRFS_UUID=$(blkid -s UUID -o value "$BTRFS_PART")
+
+# 3. Check if the @snapshots entry already exists in fstab to prevent duplicates
+if ! grep -q "subvol=@snapshots" /etc/fstab; then
+    # Safely write the fstab entry using the dynamically fetched UUID
+    echo "UUID=$BTRFS_UUID /.snapshots btrfs rw,noatime,compress=zstd:3,ssd,discard=async,space_cache=v2,subvol=@snapshots 0 0" | sudo tee -a /etc/fstab
+    echo "--- Successfully added @snapshots to /etc/fstab using UUID: $BTRFS_UUID ---"
+else
+    echo "--- @snapshots entry already exists in /etc/fstab, skipping ---"
+fi
+
+# 4. Mount all filesystems listed in fstab (including the newly added @snapshots)
 mount -a
+
+# 5. Verification
+# Check if the output line includes your current UUID and subvol=@snapshots parameters
+tail -n 1 /etc/fstab
 ```
 
 <br>
