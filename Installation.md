@@ -97,6 +97,8 @@ mount -o noatime,compress=zstd,subvol=@log /dev/nvme0n1p3 /mnt/var/log
 
 # Mount EFI to /mnt/boot/efi
 mount /dev/nvme0n1p1 /mnt/boot/efi
+
+# Enable swap
 swapon /dev/nvme0n1p2
 ```
 <br>
@@ -187,7 +189,7 @@ pacman -S --noconfirm intel-ucode # Or amd-ucode for AMD CPUs
 
 # Install GRUB
 pacman -S --noconfirm grub efibootmgr os-prober
-grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=GRUB
+grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=GRUB --removable
 grub-mkconfig -o /boot/grub/grub.cfg
 ```
 
