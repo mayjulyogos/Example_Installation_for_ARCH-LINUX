@@ -310,9 +310,7 @@ sudo pacman -S cuda
 
 ## Step 11. Configure Audio and Bluetooth
 ```bash
-su
-
-pacman -Syu
+sudo pacman -Syu
 pacman -S \
 pipewire \
 wireplumber \
@@ -338,36 +336,34 @@ reboot
 
 ## Step 12. Firewalld
 ```bash
-su
-
 # Install firewalld and the graphical configuration tool
-pacman -S firewalld network-manager-applet
+sudo pacman -S firewalld network-manager-applet
 
 # Enable and start the service
-systemctl enable --now firewalld
+sudo systemctl enable --now firewalld
 
 # Install AppArmor and the default profiles
-pacman -S apparmor
+sudo pacman -S apparmor
 
 # Enable the systemd service
-systemctl enable apparmor.service
+sudo systemctl enable apparmor.service
 
-nano /etc/default/grub
+sudo nano /etc/default/grub
 GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet rhgb rd.driver.blacklist=nouveau,nova_core modprobe.blacklist=nouveau,nova_core nvidia-drm.modeset=1 nvidia-drm.fbdev=1 acpi_backlight=native apparmor=1 lsm=landlock,lockdown,yama,apparmor,bpf"
 # Ctrl + O, Enter, then Ctrl + X
 
-grub-mkconfig -o /boot/grub/grub.cfg
+sudo grub-mkconfig -o /boot/grub/grub.cfg
 
-pacman -S firewall-config
+sudo pacman -S firewall-config
 
 # Automatically inject nvidia modules into mkinitcpio.conf for early loading (KMS)
 sudo sed -i 's/^MODULES=(\s*/MODULES=(nvidia nvidia_modeset nvidia_uvm nvidia_drm /; s/ )/)/' /etc/mkinitcpio.conf
 
 # Regenerate the initramfs
-mkinitcpio -P
+sudo mkinitcpio -P
 
 # Regenerate grub one more time to apply the command line arguments
-grub-mkconfig -o /boot/grub/grub.cfg
+sudo grub-mkconfig -o /boot/grub/grub.cfg
 ```
 
 <br>
@@ -384,9 +380,7 @@ This gives you Fedora Atomic / NixOS-style rollbacks on top of your existing btr
 
 ### Step 13.1. Install the packages
 ```bash
-su
-
-pacman -S --noconfirm snapper grub-btrfs inotify-tools snap-pac
+sudo pacman -S --noconfirm snapper grub-btrfs inotify-tools snap-pac
 ```
 - `snapper` — creates and manages the snapshots
 - `grub-btrfs` — adds a "snapshots" submenu to GRUB so you can boot into any snapshot
@@ -399,30 +393,30 @@ pacman -S --noconfirm snapper grub-btrfs inotify-tools snap-pac
 Your original partitioning (Step 5) didn't create a subvolume for snapshots, so add one now. This must be a sibling of `@`, not nested inside it, or recursive snapshotting will break.
 ```bash
 # Temporarily mount the top-level (unnamed) subvolume of the btrfs filesystem
-mkdir -p /mnt/btrfs-root
-mount -o subvol=/ /dev/nvme0n1p3 /mnt/btrfs-root
+sudo mkdir -p /mnt/btrfs-root
+sudo mount -o subvol=/ /dev/nvme0n1p3 /mnt/btrfs-root
 
 # Create the new subvolume as a sibling of @, @home, @cache, @log
-btrfs subvolume create /mnt/btrfs-root/@snapshots
+sudo btrfs subvolume create /mnt/btrfs-root/@snapshots
 
 # Unmount, we're done with the top-level view
-umount /mnt/btrfs-root
+sudo umount /mnt/btrfs-root
 ```
 
 <br>
 
 ### Step 13.3. Mount `@snapshots` at `/.snapshots`
 ```bash
-mkdir -p /.snapshots
+sudo mkdir -p /.snapshots
 
 # 1. Automatically find the Btrfs root partition (e.g., /dev/nvme0n1p3)
-BTRFS_PART=$(findmnt -n -o SOURCE /)
+sudo BTRFS_PART=$(findmnt -n -o SOURCE /)
 
 # 2. Automatically extract the UUID of that Btrfs partition
-BTRFS_UUID=$(blkid -s UUID -o value "$BTRFS_PART")
+sudo BTRFS_UUID=$(blkid -s UUID -o value "$BTRFS_PART")
 
 # 3. Check if the @snapshots entry already exists in fstab to prevent duplicates
-if ! grep -q "subvol=@snapshots" /etc/fstab; then
+sudo if ! grep -q "subvol=@snapshots" /etc/fstab; then
     # Safely write the fstab entry using the dynamically fetched UUID
     echo "UUID=$BTRFS_UUID /.snapshots btrfs rw,noatime,compress=zstd:3,ssd,discard=async,space_cache=v2,subvol=@snapshots 0 0" | sudo tee -a /etc/fstab
     echo "--- Successfully added @snapshots to /etc/fstab using UUID: $BTRFS_UUID ---"
@@ -431,7 +425,7 @@ else
 fi
 
 # 4. Mount all filesystems listed in fstab (including the newly added @snapshots)
-mount -a
+sudo mount -a
 
 # 5. Verification
 # Check if the output line includes your current UUID and subvol=@snapshots parameters
@@ -444,29 +438,29 @@ tail -n 1 /etc/fstab
 `snapper create-config` wants to create its own `.snapshots` subvolume, so we let it create one, then swap in the one we already mounted.
 ```bash
 # 1. Remove the empty directory (if it exists) to ensure a clean mount point
-rm -rf /.snapshots
+sudo rm -rf /.snapshots
 
 # 2. Generate the root config (Snapper will automatically create a default /.snapshots subvolume)
-snapper -c root create-config /
+sudo snapper -c root create-config /
 
 # 3. Delete the automatically generated subvolume so we can replace it with our @snapshots subvolume
-btrfs subvolume delete /.snapshots
+sudo btrfs subvolume delete /.snapshots
 
 # 4. Recreate the mount point directory
-mkdir -p /.snapshots
+sudo mkdir -p /.snapshots
 
 # 5. Mount all filesystems listed in /etc/fstab (mounts @snapshots to /.snapshots)
-mount -a
+sudo mount -a
 
 # 6. Apply strict permission settings
-chmod 750 /.snapshots
+sudo chmod 750 /.snapshots
 ```
 
 <br>
 
 ### Step 13.5. Tune snapshot retention (optional but recommended)
 ```bash
-nano /etc/snapper/configs/root
+sudo nano /etc/snapper/configs/root
 ```
 Set these values:
 ```
@@ -480,8 +474,8 @@ Ctrl + O, Enter, then Ctrl + X to save and exit.
 
 Enable the timers that create and clean up timeline snapshots:
 ```bash
-systemctl enable --now snapper-timeline.timer
-systemctl enable --now snapper-cleanup.timer
+sudo systemctl enable --now snapper-timeline.timer
+sudo systemctl enable --now snapper-cleanup.timer
 ```
 
 <br>
@@ -489,10 +483,10 @@ systemctl enable --now snapper-cleanup.timer
 ### Step 13.6. Wire snapshots into GRUB
 ```bash
 # Auto-regenerates grub.cfg whenever a new snapshot is created
-systemctl enable --now grub-btrfsd
+sudo systemctl enable --now grub-btrfsd
 
 # Build the initial snapshot submenu (your EFI is at /boot)
-grub-mkconfig -o /boot/grub/grub.cfg
+sudo grub-mkconfig -o /boot/grub/grub.cfg
 ```
 From this point on, `grub-btrfsd` watches `/.snapshots` and regenerates `/boot/grub/grub.cfg` automatically every time `snap-pac` creates a snapshot. You don't need to re-run `grub-mkconfig` manually going forward.
 
@@ -501,7 +495,7 @@ From this point on, `grub-btrfsd` watches `/.snapshots` and regenerates `/boot/g
 ### Step 13.7. (Optional) Track `/home` separately
 Because `@home` is its own subvolume, the root config above does **not** cover it — a system rollback won't touch your personal files, which is usually what you want. If you'd also like undo history for `/home`:
 ```bash
-snapper -c home create-config /home
+sudo snapper -c home create-config /home
 ```
 It shares the same `snapper-timeline.timer` and `snapper-cleanup.timer` already enabled above.
 
@@ -510,7 +504,7 @@ It shares the same `snapper-timeline.timer` and `snapper-cleanup.timer` already 
 ### Step 13.8. Make the snapshot submenu easy to find and keep it short
 grub-btrfs always nests snapshots inside a submenu — there's no supported config option to fully flatten them onto the main GRUB page (this isn't exposed by the tool, despite some guides online claiming otherwise). What you *can* do is name the submenu clearly and keep it short so it's fast to use:
 ```bash
-nano /etc/default/grub-btrfs/config
+sudo nano /etc/default/grub-btrfs/config
 ```
 Give the submenu a distinct name so it stands out on the boot screen:
 ```
@@ -522,7 +516,7 @@ GRUB_BTRFS_LIMIT="10"
 ```
 Save (Ctrl + O, Enter) and exit (Ctrl + X), then regenerate GRUB once to apply it:
 ```bash
-grub-mkconfig -o /boot/grub/grub.cfg
+sudo grub-mkconfig -o /boot/grub/grub.cfg
 ```
 From now on `grub-btrfsd` keeps this configuration applied automatically as new snapshots are created — no need to repeat this step. In practice, this means one extra Enter press at boot to open the submenu, then pick your snapshot — there's no safe way around that extra step without hand-patching a file that pacman will overwrite on the next `grub-btrfs` update.
 
@@ -532,14 +526,12 @@ From now on `grub-btrfsd` keeps this configuration applied automatically as new 
 
 **List snapshots:**
 ```bash
-su
-
-snapper -c root list
+sudo snapper -c root list
 ```
 
 **Take a manual snapshot before something risky** (e.g. before Step 10's Nvidia driver install, or before a `yay -Syu`):
 ```bash
-snapper -c root create --description "new regular snapshot"
+sudo snapper -c root create --description "new regular snapshot"
 ```
 
 Boot into a snapshot to inspect it (non-destructive, read-only):
@@ -547,16 +539,14 @@ Reboot → in the GRUB menu select `Arch Linux snapshots` → pick the timestamp
 
 **Actually roll back to a snapshot** (your current state is preserved as a new snapshot first, so this is non-destructive):
 ```bash
-su
-
-snapper -c root list          # find the snapshot number, e.g. 42
-snapper -c root rollback 42
+sudo snapper -c root list          # find the snapshot number, e.g. 42
+sudo snapper -c root rollback 42
 systemctl reboot
 ```
 
 **Diff what changed between two snapshots:**
 ```bash
-snapper -c root status 40..42
+sudo snapper -c root status 40..42
 ```
 
 SAFE:
@@ -586,8 +576,8 @@ mount /dev/nvme0n1p1 /mnt/boot/efi
 arch-chroot /mnt
 
 # 5. List and restore your target snapshot
-snapper -c root list
-snapper -c root rollback <snapshot_number>
+sudo snapper -c root list
+sudo snapper -c root rollback <snapshot_number>
 
 # 6. Exit chroot, unmount cleanly, and reboot
 exit
@@ -605,9 +595,7 @@ reboot
 
 ### Step 13.1. Install the packages
 ```bash
-su
-
-pacman -S --noconfirm snapper grub-btrfs inotify-tools snap-pac
+sudo pacman -S --noconfirm snapper grub-btrfs inotify-tools snap-pac
 ```
 
 - `snapper` — creates and manages the snapshots[cite: 1]
@@ -621,30 +609,30 @@ pacman -S --noconfirm snapper grub-btrfs inotify-tools snap-pac
 Your original partitioning didn't create a subvolume for snapshots, so add one now[cite: 1]. This must be a sibling of `@`, not nested inside it, or recursive snapshotting will break[cite: 1].
 ```bash
 # Temporarily mount the top-level (unnamed) subvolume of the btrfs filesystem
-mkdir -p /mnt/btrfs-root
-mount -o subvol=/ /dev/nvme0n1p3 /mnt/btrfs-root
+sudo mkdir -p /mnt/btrfs-root
+sudo mount -o subvol=/ /dev/nvme0n1p3 /mnt/btrfs-root
 
 # Create the new subvolume as a sibling of @, @home, @cache, @log
-btrfs subvolume create /mnt/btrfs-root/@snapshots
+sudo btrfs subvolume create /mnt/btrfs-root/@snapshots
 
 # Unmount, we're done with the top-level view
-umount /mnt/btrfs-root
+sudo umount /mnt/btrfs-root
 ```
 
 <br>
 
 ### Step 13.3. Mount `@snapshots` at `/.snapshots`
 ```bash
-mkdir -p /.snapshots
+sudo mkdir -p /.snapshots
 
 # 1. Automatically find the Btrfs root partition (e.g., /dev/nvme0n1p3)
-BTRFS_PART=$(findmnt -n -o SOURCE /)
+sudo BTRFS_PART=$(findmnt -n -o SOURCE /)
 
 # 2. Automatically extract the UUID of that Btrfs partition
-BTRFS_UUID=$(blkid -s UUID -o value "$BTRFS_PART")
+sudo BTRFS_UUID=$(blkid -s UUID -o value "$BTRFS_PART")
 
 # 3. Check if the @snapshots entry already exists in fstab to prevent duplicates
-if ! grep -q "subvol=@snapshots" /etc/fstab; then
+sudo if ! grep -q "subvol=@snapshots" /etc/fstab; then
     # Safely write the fstab entry using the dynamically fetched UUID
     echo "UUID=$BTRFS_UUID /.snapshots btrfs rw,noatime,compress=zstd:3,ssd,discard=async,space_cache=v2,subvol=@snapshots 0 0" | sudo tee -a /etc/fstab
     echo "--- Successfully added @snapshots to /etc/fstab using UUID: $BTRFS_UUID ---"
@@ -653,7 +641,7 @@ else
 fi
 
 # 4. Mount all filesystems listed in fstab (including the newly added @snapshots)
-mount -a
+sudo mount -a
 
 # 5. Verification
 # Check if the output line includes your current UUID and subvol=@snapshots parameters
@@ -666,29 +654,29 @@ tail -n 1 /etc/fstab
 `snapper create-config` wants to create its own `.snapshots` subvolume, so we let it create one, then swap in the one we already mounted[cite: 1].
 ```bash
 # 1. Remove the empty directory (if it exists) to ensure a clean mount point
-rm -rf /.snapshots
+sudo rm -rf /.snapshots
 
 # 2. Generate the root config (Snapper will automatically create a default /.snapshots subvolume)
-snapper -c root create-config /
+sudo snapper -c root create-config /
 
 # 3. Delete the automatically generated subvolume so we can replace it with our @snapshots subvolume
-btrfs subvolume delete /.snapshots
+sudo btrfs subvolume delete /.snapshots
 
 # 4. Recreate the mount point directory
-mkdir -p /.snapshots
+sudo mkdir -p /.snapshots
 
 # 5. Mount all filesystems listed in /etc/fstab (mounts @snapshots to /.snapshots)
-mount -a
+sudo mount -a
 
 # 6. Apply strict permission settings
-chmod 750 /.snapshots
+sudo chmod 750 /.snapshots
 ```
 
 <br>
 
 ### Step 13.5. Tune snapshot retention (optional but recommended)
 ```bash
-nano /etc/snapper/configs/root
+sudo nano /etc/snapper/configs/root
 ```
 Set these values:
 ```text
@@ -702,8 +690,8 @@ Press `Ctrl + O`, `Enter`, then `Ctrl + X` to save and exit.
 
 Enable the timers that create and clean up timeline snapshots:
 ```bash
-systemctl enable --now snapper-timeline.timer
-systemctl enable --now snapper-cleanup.timer
+sudo systemctl enable --now snapper-timeline.timer
+sudo systemctl enable --now snapper-cleanup.timer
 ```
 
 <br>
@@ -711,10 +699,10 @@ systemctl enable --now snapper-cleanup.timer
 ### Step 13.6. Wire snapshots into GRUB
 ```bash
 # Auto-regenerates grub.cfg whenever a new snapshot is created
-systemctl enable --now grub-btrfsd
+sudo systemctl enable --now grub-btrfsd
 
 # Build the initial snapshot submenu
-grub-mkconfig -o /boot/grub/grub.cfg
+sudo grub-mkconfig -o /boot/grub/grub.cfg
 ```
 From this point on, `grub-btrfsd` watches `/.snapshots` and regenerates `/boot/grub/grub.cfg` automatically every time `snap-pac` creates a snapshot[cite: 1]. You don't need to re-run `grub-mkconfig` manually going forward[cite: 1].
 
@@ -723,7 +711,7 @@ From this point on, `grub-btrfsd` watches `/.snapshots` and regenerates `/boot/g
 ### Step 13.7. (Optional) Track `/home` separately
 Because `@home` is its own subvolume, the root config above does **not** cover it — a system rollback won't touch your personal files, which is usually what you want[cite: 1]. If you'd also like undo history for `/home`:
 ```bash
-snapper -c home create-config /home
+sudo snapper -c home create-config /home
 ```
 It shares the same `snapper-timeline.timer` and `snapper-cleanup.timer` already enabled above[cite: 1].
 
@@ -732,7 +720,7 @@ It shares the same `snapper-timeline.timer` and `snapper-cleanup.timer` already 
 ### Step 13.8. Make the snapshot submenu easy to find and keep it short
 grub-btrfs always nests snapshots inside a submenu[cite: 1]. What you *can* do is name the submenu clearly and keep it short so it's fast to use:
 ```bash
-nano /etc/default/grub-btrfs/config
+sudo nano /etc/default/grub-btrfs/config
 ```
 Give the submenu a distinct name so it stands out on the boot screen:
 ```text
@@ -744,7 +732,7 @@ GRUB_BTRFS_LIMIT="10"
 ```
 Save (`Ctrl + O`, `Enter`) and exit (`Ctrl + X`), then regenerate GRUB once to apply it:
 ```bash
-grub-mkconfig -o /boot/grub/grub.cfg
+sudo grub-mkconfig -o /boot/grub/grub.cfg
 ```
 
 <br>
@@ -753,14 +741,12 @@ grub-mkconfig -o /boot/grub/grub.cfg
 
 **List snapshots:**
 ```bash
-su
-
-snapper -c root list
+sudo snapper -c root list
 ```
 
 **Take a manual snapshot before something risky:**
 ```bash
-snapper -c root create --description "new regular snapshot"
+sudo snapper -c root create --description "new regular snapshot"
 ```
 
 **Boot into a snapshot to inspect it (non-destructive, read-only):**
@@ -768,16 +754,14 @@ Reboot → in the GRUB menu select `Rollback to Snapshot` → pick the timestamp
 
 **Actually roll back to a snapshot:**
 ```bash
-su
-
-snapper -c root list          # find the snapshot number, e.g. 42
-snapper -c root rollback 42
+sudo snapper -c root list          # find the snapshot number, e.g. 42
+sudo snapper -c root rollback 42
 reboot
 ```
 
 **Diff what changed between two snapshots:**
 ```bash
-snapper -c root status 40..42
+sudo snapper -c root status 40..42
 ```
 
 <br>
@@ -799,8 +783,8 @@ mount -o subvol=@snapshots /dev/nvme0n1p3 /mnt/.snapshots
 arch-chroot /mnt
 
 # 5. List and restore your target snapshot
-snapper -c root list
-snapper -c root rollback <snapshot_number>
+sudo snapper -c root list
+sudo snapper -c root rollback <snapshot_number>
 
 # 6. Exit chroot, unmount cleanly, and reboot
 exit
