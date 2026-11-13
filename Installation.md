@@ -361,7 +361,7 @@ grub-mkconfig -o /boot/grub/grub.cfg
 pacman -S firewall-config
 
 # Automatically inject nvidia modules into mkinitcpio.conf for early loading (KMS)
-sed -i 's/^MODULES=(/MODULES=(nvidia nvidia_modeset nvidia_uvm nvidia_drm /' /etc/mkinitcpio.conf
+sudo sed -i 's/^MODULES=(\s*/MODULES=(nvidia nvidia_modeset nvidia_uvm nvidia_drm /; s/ )/)/' /etc/mkinitcpio.conf
 
 # Regenerate the initramfs
 mkinitcpio -P
