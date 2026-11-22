@@ -190,6 +190,7 @@ pacman -S --noconfirm intel-ucode # Or amd-ucode for AMD CPUs
 # Install GRUB
 pacman -S --noconfirm grub efibootmgr os-prober
 grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=GRUB --removable
+# grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=GRUB --removable --disable-shim-lock
 grub-mkconfig -o /boot/grub/grub.cfg
 ```
 
@@ -260,6 +261,46 @@ vm.swappiness = 10
 # Run this following command line to apply changes
 su # Enter root environment
 sysctl -p
+```
+
+<br>
+
+---
+
+<br>
+
+## Secure Boot
+- This is important for enabling `Secure Boot`
+```bash
+# Install sbctl
+pacman -S sbctl
+
+# Verify Setup Mode
+sbctl status
+
+# Create Keys
+# This generates your PK, KEK, and db keys (stored in /var/lib/sbctl/keys/).
+sbctl create-keys
+
+# Enroll Keys
+sbctl enroll-keys -m -f
+
+# Sign Boot Files
+# Then sign each unsigned file with the -s (save) flag:
+sbctl sign -s /boot/EFI/BOOT/BOOTX64.EFI
+sbctl sign -s /boot/vmlinuz-linux
+
+# If you use systemd-boot with Unified Kernel Images (UKIs), sign those instead:
+sbctl sign -s /boot/EFI/systemd/systemd-bootx64.efi
+sbctl sign -s /boot/EFI/Linux/arch-linux.efi
+# Run sbctl verify again to confirm everything shows
+
+# Verify
+sbctl verify
+
+# After kernel update
+# After each pacman -Syu, re-sign updated files:
+sbctl sign-all
 ```
 
 <br>
