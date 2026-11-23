@@ -11,7 +11,7 @@
 * UEFI and BIOS Booting via GRUB.
 * Btrfs Subvolume Layout (@, @home, @cache, @log, @snapshots).
 * Audio & Bluetooth Setup using PipeWire and WirePlumber.
-* Security Hardening using firewalld and AppArmor.
+* Security Hardening using firewalld.
 * Atomic System Rollbacks integrated with pacman and grub-btrfs.
 
 <br>
