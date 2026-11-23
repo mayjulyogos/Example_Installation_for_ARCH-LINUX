@@ -342,12 +342,6 @@ sudo pacman -S firewalld network-manager-applet
 # Enable and start the service
 sudo systemctl enable --now firewalld
 
-# Install AppArmor and the default profiles
-sudo pacman -S apparmor
-
-# Enable the systemd service
-sudo systemctl enable apparmor.service
-
 sudo nano /etc/default/grub
 GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet rhgb rd.driver.blacklist=nouveau,nova_core modprobe.blacklist=nouveau,nova_core nvidia-drm.modeset=1 nvidia-drm.fbdev=1 acpi_backlight=native apparmor=1 lsm=landlock,lockdown,yama,apparmor,bpf"
 # Ctrl + O, Enter, then Ctrl + X
