@@ -12,6 +12,7 @@
 * Btrfs Subvolume Layout (@, @home, @cache, @log, @snapshots).
 * Audio & Bluetooth Setup using PipeWire and WirePlumber.
 * Security Hardening using firewalld.
+* Btrfs Snapshot Setup
 
 <br>
 
